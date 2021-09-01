@@ -6,25 +6,31 @@
 
 \usefonttheme{professionalfonts}
 \setbeamertemplate{navigation symbols}{}
-\setbeamercolor{normal text}{bg=black!3}
+\setbeamercolor{normal text}{bg=black!2}
 \setbeamertemplate{frametitle}[default][center] % Sets the frametitle center
+
+% for japanese
+\usepackage{bxdpx-beamer}% dvipdfmxなので必要
+\usepackage{pxjahyper}% 日本語で'しおり'したい
+\usepackage{minijs}% min10ヤダ
+\renewcommand{\kanjifamilydefault}{\gtdefault}% 既定をゴシック体に
+
+% style file
+\usepackage{./mysty}
+\usepackage{./mymacro}
 
 % --- page number ---
 % \setbeamertemplate{footline}{%
 % 	\raisebox{10pt}{\makebox[\paperwidth]{\hfill\makebox[7em]{\normalsize\texttt{\insertframenumber/\inserttotalframenumber}}}}%
 % }
 
-\date{}	% Insert the date of your presentation. \today gives an unsurprising automatic date.
+\date{\today}	% Insert the date of your presentation. \today gives an unsurprising automatic date.
 \title[Template]{日本語もおｋ？}	% Insert your title.  Depending on the theme you choose above, a "short title" might be useful, as it will appear on the footer of each slide.
-\author[Y Hikima]{Yasunari HIKIMA} % Insert your name
-\institute[Fujitsu Lab]{Fujitsu Research} % Self-explanatory
+\author[Y. Hikima]{Yasunari HIKIMA} % Insert your name
+\institute[Fujitsu Research]{Fujitsu Limited} % Self-explanatory
 
 % Presenter's note
 % \setbeameroption{show notes on second screen}
-
-\title{Beamer Example}
-\author{eqs}
-\date{\today}
 
 \begin{document}
 
@@ -38,7 +44,7 @@
 
 A sequence of functions $f_n \colon \mathbb{R} \to \mathbb{R}$ \emph{converges uniformly} to a function $f \colon \mathbb{R} \to \mathbb{R}$ if for all $\epsilon > 0$ there exists an $N \in \mathbb{N}$ such that $n \geq N$ implies 
 \[
-\sup_{x \in \mathbb{R}} |f_n(x) - f(x)| < \epsilon.
+\sup_{x \in \mathbb{R}} |f_n(\vecx) - f(\vecx)| < \epsilon.
 \]
 
 \end{definition}
@@ -60,6 +66,16 @@ A sequence of functions $f_n \colon \mathbb{R} \to \mathbb{R}$ \emph{converges u
 Let $f_n \colon\mathbb{R} \to \mathbb{R}$ be continuous and converge uniformly to $f \colon \mathbb{R} \to \mathbb{R}$.  Then $f$ is continuous.
 \end{theorem}
 
+\end{frame}
+
+\begin{frame}{Example 2 (\texttt{highlightcap}, \texttt{cbracket})}
+    When we consider a Gaussian prior $p(\mathbf w | \alpha) = \mathcal N(\mathbf w | \boldsymbol 0, \alpha^{-1}\mathbf I)$,
+    maximization of the corresponding posterior $p(\mathbf w | \boldsf{t})$ with respect to $\mathbf w$ is equivalent to the minimization of
+    \begin{align*}
+        \highlightcap<2->[red]{\displaystyle\frac{\beta}{2}\sum_{n=1}^N \cbracket{t_n - \mathbf w^\top\boldsymbol\phi(\mathbf x_n)}^2}{an error function}
+        + \highlightcap<3->[blue]{\displaystyle\frac{\alpha}{2}\mathbf w^\top\mathbf w}{a quadratic regularization} \tag{3.55'}
+    \end{align*}
+    the minimization corresponds to (3.27) with $\lambda = \alpha/\beta$.
 \end{frame}
 
 
