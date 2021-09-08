@@ -1,0 +1,363 @@
+\documentclass[dvipdfmx]{beamer}
+
+\usepackage{amsmath, amssymb, mathtools}
+\usetheme{Madrid}% Sets basic formatting.  Lots of options, google "beamer themes"
+\usecolortheme{dolphin}% Sets the colour scheme.  Lots of options, google "beamer color themes"
+
+\usefonttheme{professionalfonts}
+\setbeamertemplate{navigation symbols}{}
+\setbeamercolor{normal text}{bg=black!2}
+\setbeamertemplate{frametitle}[default][center] % Sets the frametitle center
+
+% 集合の内包的記法
+% e.g., \Set*{x \in \mathbb R \setminus \set{1, 2}}
+%         {\frac{1}{x-1} + \floor*{\frac{1}{x-2}} \leq 3}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+\DeclarePairedDelimiter\set{\{}{\}}
+\DeclarePairedDelimiterX\Set[2]{\{}{\}}{\mspace{2mu}{#1}\;\delimsize|\;{#2}\mspace{2mu}}
+
+
+% for japanese
+\usepackage{bxdpx-beamer}% dvipdfmxなので必要
+\usepackage{pxjahyper}% 日本語で'しおり'したい
+\usepackage{minijs}% min10ヤダ
+\renewcommand{\kanjifamilydefault}{\gtdefault}% 既定をゴシック体に
+
+% style file
+\usepackage{./mysty}
+\usepackage{./mymacro}
+
+% --- page number ---
+% \setbeamertemplate{footline}{%
+% 	\raisebox{10pt}{\makebox[\paperwidth]{\hfill\makebox[7em]{\normalsize\texttt{\insertframenumber/\inserttotalframenumber}}}}%
+% }
+
+\date{\today}	% Insert the date of your presentation. \today gives an unsurprising automatic date.
+\title[Evaluation the stability]{Evaluation the stability of B\'{e}zier fitting based algorithm for multi-objective optimization problem}	% Insert your title.  Depending on the theme you choose above, a "short title" might be useful, as it will appear on the footer of each slide.
+\subtitle[RL Seminar]{Representation Learning Seminar}
+\author[Yasunari Hikima]{Yasunari HIKIMA} % Insert your name
+% \institute[Fujitsu Research]{Fujitsu Limited} % Self-explanatory
+
+% Presenter's note
+% \setbeameroption{show notes on second screen}
+
+\begin{document}
+
+\begin{frame}[plain]
+    \maketitle
+\end{frame}
+
+\begin{frame}\frametitle{Topic}
+\begin{itemize}
+    \item Proposed algorithm
+    \item Stability of algorithm
+    \item Numerical experiments
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{A multi-objective optimization problem}
+We consider the following multi-objective optimization problem:
+\begin{align*}
+    \min_{x} \quad &f(\vecx) := \left(f_1(\vecx), f_2(\vecx), \dots, f_M(\vecx)\right),\\
+    \st \quad & \vecx \in X \subseteq \R^n.
+\end{align*}
+\begin{figure}[hbtp]
+    \centering
+    \includegraphics[keepaspectratio, scale=0.3]
+         {pareto.png}
+    % \caption{}
+\end{figure}
+\rightline{Cite: [Kobayashi+ 2019]}
+\end{frame}
+
+\begin{frame}{Algorithm}
+The proposed algorithm is described as follows:
+\begin{enumerate}
+    \item 初期の制御点$\vecp^{(1)}\in\mathbb{R}^D$を設定する．$k\leftarrow 1$とする．
+    \item 標準単体 $\Delta^{M-1}$ 上から点集合 $\{\vect_i\}_{i=1}^{N} \subseteq \mathbb{R}^M$ を生成する．制御点 $\vecp^{(k)}$ で表現されるベジエ単体の式に代入して，点集合 $\{\vecx^{(k)}_i\}_{i=1}^{N} \subseteq \mathbb{R}^n$ を得る.
+    \item 点集合 $\{\vecx_i^{(k)}\}_{i=1}^{N}$ を以下の規則によって更新する:
+\begin{align*}
+\vecx_i^{(k+1)}(\vect) = \vecb^{(k)}(\vect_i|\vecp^{(k)})+ \alpha d_x \tilde{f}(\vecb^{(k)}(\vect_i|\vecp^{(k)})) \quad (i=1,\dots,N).
+\end{align*}
+    \item 制御点を以下の規則によって更新する：
+\begin{align*}
+\vecp^{(k+1)} = \arg\min_{p\in\mathbb R^D} \int_{\Delta^{M-1}}\|\vecx^{(k+1)}(\vect) - \vecb(\vect|\vecp)\|^2\,\mathrm{d}\vect.
+\end{align*}
+    \item 終了条件を満たしているか確認し，満たしていれば $\vecp^{(k+1)}$ を出力して反復を終了する．さもなければ，$k \leftarrow k+1$ としてstep2へ戻る．
+\end{enumerate}
+\end{frame}
+
+\begin{frame}[allowframebreaks]
+\frametitle{Some remarks on the algorithm}
+\begin{itemize}
+    \item 各種パラメータは以下の通り:
+    \begin{itemize}
+        \item $M$: 解くべき多目的最適化問題の目的関数の個数
+        \item $n$: 解くべき多目的最適化問題の決定変数の次元
+        \item $N$: アルゴリズムで用いるサンプル点の個数
+        \item $D$: (求める)ベジエ単体の次数
+    \end{itemize}
+    \item 写像$\vecb\colon\Delta^{M-1}\ni\vect\mapsto\vecb(\vect)\in\R^M$は次式で定義される:
+    \begin{align*}
+        \vecb(\vect) := \sum_{d\in\mathbb{N}^M_D} \binom{D}{\vecd} \vect^{\vecd} \vecp_{\vecd},
+    \end{align*}
+    where
+    \begin{align*}
+        &\binom{D}{\vecd} := \frac{D!}{d_1!d_2!\dots d_M!},\quad \vect^{\vecd}:= t_1^{d_1} t_2^{d_2} \dots t_M^{d_M},\\
+        &\mathbb{N}^M_D := \Set*{\vecd = (d_1,d_2,\dots,d_M) \in \mathbb{N}^M}
+            {\sum_{m=1}^{M}d_m = D}
+    \end{align*}
+    \item 各$i$に対してベクトル$\vecz_i$を
+    \begin{align*}
+        \vecz_i := \left[\binom{D}{\vecd_1}t_{i,1}^{\vecd_1}, \binom{D}{\vecd_2}t_{i,2}^{\vecd_2},\dots,\binom{D}{\vecd_{|\mathbb{N}_D^M|}}t_{i,|\mathbb{N}_D^M|}^{\vecd_{|\mathbb{N}_D^M|} } \right]^\top\in \R^{|\mathbb{N}_D^M|}
+    \end{align*}
+    で定義する．また，行列$P\in\R^{|\mathbb{N}^M_D|\times M}$と行列$Z\in N\times |\mathbb{N}^M_D|$を
+    \begin{align*}
+        P := \left[ \vecp_1,\vecp_2,\dots,\vecp_{|\mathbb{N}^M_D|} \right], \quad Z = \left[ \vecz_1,\vecz_2,\dots,\vecz_N \right]
+    \end{align*}
+    で定義すると写像$\vecb$は$\vecb(\vect)=ZP$で表される．
+    \item 点$\vecx$の更新式に現れる関数$\tilde{f}$は$M$個の目的関数を$\vect$で重み付けをした関数を表す，i.e.,
+    \begin{align*}
+        \tilde{f}(\vecx) := \sum_{i=1}^{N} t_i f_i(\vecx).
+    \end{align*}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{A stability of an algorithm}
+
+\begin{alertblock}{Def. Uniform stability}
+乱択アルゴリズム$A$が$\epsilon$-uniformly stable であるとは，高々一つのデータしか異ならないような任意のサンプル集合$S,S^\prime \in Z^n$に対して，以下の不等式が成り立つことをいう:
+\begin{align*}
+    \sup_{z}\mathbb{E}_A \left[ \left| f\nbracket{A(S);z} - f\nbracket{A(S^\prime);z} \right| \right] \leq \epsilon.
+\end{align*}
+ここで，$f$は誤差関数を表す．
+\end{alertblock}
+
+\begin{block}{提案アルゴリズムに対する安定性}
+提案アルゴリズム$A$が$\epsilon$-uniformly stable であるとは，
+高々一つのデータしか異ならないような任意のサンプル集合$S,S^\prime \in Z^n$に対して，
+以下の不等式が成り立つことをいう:
+\begin{align*}
+    \left| \mathrm{loss}\nbracket{A(S);z} - \mathrm{loss}\nbracket{A(S^\prime);z} \right| \leq \epsilon.
+\end{align*}
+\end{block}
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{An upper bound of loss function}
+
+\begin{block}{誤差関数}
+提案手法における誤差関数は次式で定義される:
+\begin{align*}
+    \mathrm{loss}(P;\vect) :=\|\vecb(\vect|P) - \vecb^\star(\vect)\|.
+\end{align*}
+ここで，$\vect$は標準単体上の点，$P$は制御点を並べた行列，$\vecb(\cdot|P)$は
+制御点行列$P$のもとでのベジエ単体，$\vecb^*$は真のベジエ単体をそれぞれ表す．
+\end{block}
+
+\begin{exampleblock}{ベジエ単体の表現}
+ベジエ写像$\vecb\colon\Delta^{M-1}\to\R^M$は次式で表される:
+\begin{align*}
+    \vecb(\vect) := \sum_{d\in\mathbb{N}^M_D} \binom{D}{\vecd} \vect^{\vecd} \vecp_{\vecd} 
+    = P^\top \vecz,
+\end{align*}
+% \begin{align*}
+%     P := \left[ \vecp_1,\vecp_2,\dots,\vecp_{|\mathbb{N}^M_D|} \right], \quad Z = \left[ \vecz_1,\vecz_2,\dots,\vecz_N \right]
+% \end{align*}
+ここで，ベクトル$\vecz$は係数を並べた行列である．
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Derivation of the upper bound of the loss}
+    $(\clubsuit):= |\text{loss}(A(S);\vecz) - \text{loss}(A(S');\vecz)|$は次のように計算される:
+    \begin{align*}
+        (\clubsuit) &= |\|\vecb(\vect|P^{(K)}) - \vecb^\star(\vect)\|  -\|\vecb(\vect|P'^{(K)}) - b^\star(\vect)\|| \\
+        &\stackrel{\textcolor{blue}{(1)}}{=} |\|\vecb(\vect|P^{(K)}-P^\star)\|  -\|\vecb(\vect|P'^{(K)}-P^\star)\|| \\
+        &\stackrel{\textcolor{blue}{(2)}}{\leq} \|\vecb(\vect|P^{(K)}-P^\star) - \vecb(\vect|P'^{(K)}-P^\star)\|| \\
+        &= \|(P^{(K)}-P^\star)^\top \vecz- (P'^{(K)}-P^\star)^\top \vecz \| \\
+        &= \|(P^{(K)}-P'^{(K)})^\top \vecz \| \\
+        &\stackrel{\textcolor{blue}{(3)}}{\leq} \|\vecz\| \cdot \highlightcap[red]{\|P^{(K)}-P'^{(K)}\|}{\scriptsize \text{上から定数で押さえたい}}.
+    \end{align*}
+    \begin{itemize}
+        \item[(1)] Linearity of $\vecb$
+        \item[(2)] Triangle inequality
+        \item[(3)] Cauchy–Schwarz inequality
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Derivation of the upper bound of $\|P^{(K)}-P'^{(K)}\|$}
+\begin{block}{方針}
+    \begin{enumerate}
+        \item 条件数を用いて相対誤差を評価する
+        \item 正則性を仮定して絶対誤差を評価する
+        \item PAC学習における安定性による解析をする(未検討)
+    \end{enumerate}
+\end{block}
+
+\begin{block}{条件数と線型方程式の関係}
+    線型方程式:
+    \begin{align*}
+        A\vecx = \vecb, \quad (A + \Delta A)\tilde{\vecx} = \vecb + \Delta \vecb
+    \end{align*}
+    に対して，それぞれの解$\vecx,\,\tilde{\vecx}$は以下の関係を満たす:
+    \begin{align*}
+        \frac{\|\vecx - \tilde{\vecx} \|}{\|\vecx\|} 
+        \leq \kappa (A) \frac{\|\vecb - A\tilde{\vecx}\|}{\|\vecb\|}.
+    \end{align*}
+    ここで，条件数$\kappa (A)$は，$\kappa (A):=\lambda_{\max} (A) / \lambda_{\min} (A)$で定義される．
+\end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{相対誤差による評価}
+\begin{block}{Proposition}
+    $P^{(k+1)}, P^{\prime(k+1)}$ は次の線型方程式の解である．
+    \begin{align*}
+        (Z^{(k)})^\top Z^{(k)} P^{(k+1)} &= (Z^{(k)})^\top X^{(k+1)}, \\
+        \underbrace{(Z'^{(k)})^\top Z'^{(k)} P'^{(k+1)}}_{\left((Z^{(k)})^\top Z^{(k)} + \Delta (Z^{(k)})^\top Z^{(k)}\right)\tilde{P}^{(k+1)}} 
+        &= \underbrace{(Z'^{(k)})^\top X'^{(k+1)}}_{(Z^{(k)})^\top X^{(k+1)} + \Delta (Z^{(k)})^\top X^{(k+1)}}.
+    \end{align*}
+    ここで，$Z,\,Z'$および$X,\,X'$はそれぞれ一つの行のみ異なる行列である．
+\end{block}
+\vspace{\baselineskip}
+条件数と線型方程式の関係より，$P^{(k+1)}$と$P'^{(k+1)}$の相対誤差は
+\footnotesize
+\begin{align*}
+    \frac{\|P^{(k+1)}-P'^{(k+1)}\|}{\|P^{(k+1)}\|}
+    \leq \kappa \left((Z^{(k)})^\top Z^{(k)}\right) 
+    \frac{\|(Z^{(k)})^\top X^{(k+1)}-(Z^{(k)})^\top Z^{(k)}P'^{(k+1)}\|}{\|(Z^{(k)})^\top X^{(k+1)}\|}
+\end{align*}\normalsize
+のように評価できる．
+
+\end{frame}
+
+\begin{frame}[allowframebreaks]
+    \frametitle{絶対誤差による評価}
+\begin{block}{Proposition}
+$P^{(k+1)}, P^{\prime(k+1)}$ は次の線型方程式の解である．
+\begin{align*}
+(Z^{(k)})^\top Z^{(k)} P^{(k+1)} &= (Z^{(k)})^\top X^{(k+1)}, \\
+(Z'^{(k)})^\top Z'^{(k)} P'^{(k+1)} &= (Z'^{(k)})^\top X'^{(k+1)}.
+\end{align*}
+\end{block}
+
+\begin{block}{Proposition}
+正方行列$(Z^{(k)})^\top Z^{(k)},\, (Z'^{(k)})^\top Z'^{(k)}$の正則性を仮定すると，
+\begin{align*}
+    P^{(k+1)} - P'^{(k+1)} &= A^{-1} (Z^{(k)})^\top X^{(k+1)} - \tilde{A}^{-1} (Z'^{(k)})^\top X'^{(k+1)}
+\end{align*}
+である．ここで，$A:=(Z^{(k)} )^\top Z^{(k)}$であり，$\tilde{A}^{-1}$は以下で定義される．
+\begin{align*}
+    \tilde{A}^{-1} := A^{-1} - A^{-1}U(I + VA^{-1}U)^{-1}VA^{-1}.
+\end{align*}
+\end{block}
+
+\underline{証明}．
+\vspace{\baselineskip}
+
+いま，行列$Z$と$Z'$は一つの行のみ異なるような行列であるから，ある行列$U,\,V$が存在して
+\begin{align*}
+    (Z'^{(k)} )^\top Z'^{(k)} =(Z^{(k)} )^\top Z^{(k)}- UV
+\end{align*}
+が成立する．ここで，Sherman-Morrisonの公式\footnote{%
+$(A+BDC)^{-1}=A^{-1}-A^{-1}BD(D+DCA^{-1}BD)^{-1}DCA^{-1}$
+}を用いると
+\begin{align*}
+    \left((Z'^{(k)} )^\top Z'^{(k)}\right)^{-1} &= \left( (Z^{(k)} )^\top Z^{(k)}  +UV \right)^{-1}\\
+&=  A^{-1}-A^{-1}U(I+VA^{-1}U)^{-1}VA^{-1}
+\end{align*}
+が成り立つ．ただし，$A:=(Z^{(k)} )^\top Z^{(k)}$とした．
+
+% したがって，$(\spadesuit):=\|P^{(k+1)} - P'^{(k+1)}\|$は次のように計算される．
+
+% \begin{align*}
+% (\spadesuit) &= \|( A^{-1} (Z^{(k)})^\top  X^{(k+1)}- \tilde{A}^{-1} (Z'^{(k)})^\top X'^{(k+1)}\|\\
+% % &\leq \highlightcap[blue]{\| A^{-1} (Z^{(k)})^\top  - \tilde{A}^{-1} (Z'^{(k)})^\top \|}{\scriptsize$(\heartsuit)$}\cdot \highlightcap[red]{\|X^{(k+1)}\|}{\scriptsize\text{$N$に関して大きくなる}} 
+% \end{align*}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Derivation of the upper bound of $\|P^{(K)}-P'^{(K)}\|$}
+    \begin{block}{方針}
+        \begin{enumerate}
+            \item 条件数を用いて相対誤差を評価する
+            \item 正則性を仮定して絶対誤差を評価する
+        \end{enumerate}
+    \end{block}
+    \vspace{\baselineskip}
+    \begin{enumerate}
+        \item 相対誤差による評価:
+        \footnotesize
+        \begin{align*}
+            \frac{\|P^{(k+1)}-P'^{(k+1)}\|}{\|P^{(k+1)}\|}
+            \leq \kappa \left((Z^{(k)})^\top Z^{(k)}\right) 
+            \frac{\|(Z^{(k)})^\top X^{(k+1)}-(Z^{(k)})^\top Z^{(k)}P'^{(k+1)}\|}{\|(Z^{(k)})^\top X^{(k+1)}\|}.
+        \end{align*}\normalsize
+        \item 絶対誤差による評価:
+        \begin{align*}
+            \|P^{(k+1)} - P'^{(k+1)}\| = \|A^{-1} (Z^{(k)})^\top X^{(k+1)} - \tilde{A}^{-1} (Z'^{(k)})^\top X'^{(k+1)}\|.
+        \end{align*}
+    \end{enumerate}
+    \begin{alertblock}{}
+        \centering
+        いずれも上から定数で押さえることができない・・・
+    \end{alertblock}      
+\end{frame}
+
+\begin{frame}
+    \frametitle{Numerical experiments for $\|P^{(K)}-P'^{(K)}\|$}
+\begin{block}{Numerical experiments}
+ノルム誤差$\|P^{(K)}-P'^{(K)}\|$の値の推移を実験的に観察する．
+\end{block}
+\begin{exampleblock}{実験手順}
+    \begin{enumerate}
+        \item $\Delta^{M-1}$から$\{\vect_i\}_{i=1}^{N+1}$をサンプリングし，2つの集合$\mathcal{T},\,\mathcal{T}'$を定める:
+        \begin{align*}
+            \mathcal{T} := \{\highlight[blue]{\vect_1},\vect_2,\dots,\vect_N\},\quad 
+            \mathcal{T}' := \{\highlight[blue]{\vect_{N+1}},\vect_2,\dots,\vect_N\}.
+        \end{align*}
+        \item ベクトル$\vecz_i$を計算し，行列$Z,\,Z'$を構成する
+        \item 提案手法で勾配降下した点集合をフィッティングするベジエ単体上から$\{\vecx_i\}_{i=1}^{N+1}$をサンプリングする
+        \item ベクトル$\vecx_i$から行列$X,\,X'$を構成し，第一成分に対してガウシアンノイズ$\mathcal{N}(0,\sigma^2)$を加える
+        \item 線型方程式を解き，$P,\,P'$を求める
+        \item フロベニウスノルム$\|P-P'\|_F$を計算する
+    \end{enumerate}
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Numerical experiments for $\|P^{(K)}-P'^{(K)}\|$}
+\begin{block}{Numerical experiments}
+ノルム誤差$\|P^{(K)}-P'^{(K)}\|$の値の推移を実験的に観察する．
+\end{block}
+
+\begin{columns}[c]
+    \begin{column}{0.65\textwidth}
+        \begin{figure}[hbtp]
+            \centering
+            \includegraphics[keepaspectratio, scale=0.3]
+                 {exp.png}
+            \caption{$\|P^{(K)}-P'^{(K)}\|$ vs. sample size $N$}
+        \end{figure}
+    \end{column}
+    \begin{column}{0.35\textwidth}
+        \begin{itemize}
+            \item $N=50k ~ (k=1,2,\dots,200)$で実験
+            \item $\mathcal{O}(1/N)$で減少
+        \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% \begin{frame}
+%     \frametitle{}
+
+    
+
+% \end{frame}
+
+\end{document}
